@@ -28,7 +28,15 @@ async function main() {
     }
 
     // Create signer from private key
-    const signer = new SigningKey(addHexPrefix(privateKeyHex));
+    let signer;
+    try {
+      signer = new SigningKey(addHexPrefix(privateKeyHex));
+    } catch (err) {
+      console.error(
+        `Error: Invalid private key provided via --key: ${err.message}`,
+      );
+      process.exit(1);
+    }
 
     // Get the Secp256k1 key provider
     const keyProvider = kms.getKeyProvider(KmsKeyType.Secp256k1);

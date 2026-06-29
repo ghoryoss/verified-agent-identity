@@ -6,8 +6,11 @@ async function main() {
   try {
     const args = parseArgs();
 
-    if (!args.token) {
-      console.error("Error: --token parameters is required");
+    if (!args.did || !args.token) {
+      const missing = [!args.did && "--did", !args.token && "--token"]
+        .filter(Boolean)
+        .join(", ");
+      console.error(`Error: ${missing} parameter(s) required`);
       console.error(
         "Usage: node scripts/verifySignature.js --did <did> --token <token>",
       );
@@ -30,6 +33,11 @@ async function main() {
         const resp = await fetch(
           `https://resolver.privado.id/1.0/identifiers/${did}`,
         );
+        if (!resp.ok) {
+          throw new Error(
+            `DID resolution failed for ${did}: HTTP ${resp.status} ${resp.statusText}`,
+          );
+        }
         const didResolutionRes = await resp.json();
         return didResolutionRes;
       },
