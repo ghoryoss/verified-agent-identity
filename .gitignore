@@ -1,4 +1,5 @@
 scripts/node_modules
+scripts/coverage
 .vscode
 .DS_Store
 *.zip
