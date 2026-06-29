@@ -108,6 +108,49 @@ function outputSuccess(data) {
   }
 }
 
+/**
+ * Resolves a DID entry from storage, either by explicit DID or the default.
+ * Throws if no entry is found.
+ */
+async function resolveDid(didsStorage, didArg) {
+  const entry = didArg
+    ? await didsStorage.find(didArg)
+    : await didsStorage.getDefault();
+
+  if (!entry) {
+    const errorMsg = didArg
+      ? `No DID ${didArg} found`
+      : "No default DID found";
+    throw new Error(errorMsg);
+  }
+
+  return entry;
+}
+
+/**
+ * Validates that all required argument keys are present.
+ * Exits with usage information if any are missing.
+ */
+function requireArgs(args, required, usage) {
+  for (const key of required) {
+    if (args[key] === undefined) {
+      console.error(`Error: --${key} parameter is required`);
+      console.error(`Usage: ${usage}`);
+      process.exit(1);
+    }
+  }
+}
+
+/**
+ * Wraps an async main function with standard error handling.
+ */
+function runScript(fn) {
+  fn().catch((error) => {
+    console.error(formatError(error));
+    process.exit(1);
+  });
+}
+
 function urlFormating(title, url) {
   return `[${title}](${url})`;
 }
@@ -128,4 +171,7 @@ module.exports = {
   buildEthereumAddressFromDid,
   urlFormating,
   codeFormating,
+  resolveDid,
+  requireArgs,
+  runScript,
 };

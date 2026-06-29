@@ -18,14 +18,7 @@ class DidsFileStorage extends FileStorage {
       });
     }
 
-    const index = entries.findIndex((entry) => entry.did === did);
-
-    if (index >= 0) {
-      entries[index] = { did, publicKeyHex, isDefault };
-    } else {
-      entries.push({ did, publicKeyHex, isDefault });
-    }
-
+    this.upsert(entries, "did", did, { did, publicKeyHex, isDefault });
     await this.writeFile(entries);
   }
 

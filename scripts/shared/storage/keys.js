@@ -79,17 +79,12 @@ class KeysFileStorage extends FileStorage {
 
   async importKey(args) {
     const keys = await this.readFile();
-    const index = keys.findIndex((entry) => entry.alias === args.alias);
-
-    if (index >= 0) {
-      keys[index].privateKeyHex = args.key;
-    } else {
-      keys.push({
-        alias: args.alias,
-        privateKeyHex: args.key,
-        createdAt: new Date().toISOString(),
-      });
-    }
+    const existing = keys.find((entry) => entry.alias === args.alias);
+    this.upsert(keys, "alias", args.alias, {
+      alias: args.alias,
+      privateKeyHex: args.key,
+      createdAt: existing?.createdAt || new Date().toISOString(),
+    });
 
     // update key under alias
     this._opaqueEntries = this._opaqueEntries.filter(
