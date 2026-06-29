@@ -16,20 +16,34 @@ async function main() {
 
     const { kms, challengeStorage } = await getInitializedRuntime();
 
-    // Get the stored challenge
-    const challenge = await challengeStorage.getChallenge(args.did);
-    if (!challenge) {
+    // Get the stored challenge entry and validate
+    const challengeEntry = await challengeStorage.find(args.did);
+    if (!challengeEntry) {
       console.error(`Error: No challenge found for DID: ${args.did}`);
       console.error("Generate a challenge first with generateChallenge.js");
       process.exit(1);
     }
 
+    // Reject expired challenges (10-minute TTL)
+    const CHALLENGE_TTL_MS = 10 * 60 * 1000;
+    const age = Date.now() - new Date(challengeEntry.created_at).getTime();
+    if (age > CHALLENGE_TTL_MS) {
+      await challengeStorage.delete(args.did);
+      console.error("Error: Challenge has expired. Generate a new one.");
+      process.exit(1);
+    }
+
+    const challenge = challengeEntry.challenge;
+
     // Create DID resolver that fetches from remote resolver
     const resolveDIDDocument = {
       resolve: async (did) => {
         const resp = await fetch(
-          `https://resolver.privado.id/1.0/identifiers/${did}`,
+          `https://resolver.privado.id/1.0/identifiers/${encodeURIComponent(did)}`,
         );
+        if (!resp.ok) {
+          throw new Error(`DID resolution failed: ${resp.status}`);
+        }
         const didResolutionRes = await resp.json();
         return didResolutionRes;
       },
@@ -50,11 +64,12 @@ async function main() {
     // Verify the challenge matches
     const payload = basicMessage.body;
     if (payload.message !== challenge) {
-      console.error(
-        `Error: Invalid signature: challenge mismatch ${payload.message} !== ${challenge}`,
-      );
+      console.error("Error: Challenge mismatch");
       process.exit(1);
     }
+
+    // Consume the challenge to prevent replay
+    await challengeStorage.delete(args.did);
 
     outputSuccess("Signature verified successfully");
   } catch (error) {
