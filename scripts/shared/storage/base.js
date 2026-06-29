@@ -30,6 +30,20 @@ class FileStorage {
     await fs.writeFile(tempPath, json, "utf-8");
     await fs.rename(tempPath, this.filePath);
   }
+
+  /**
+   * Inserts or updates an entry in an array by a key field.
+   * Returns the updated array.
+   */
+  upsert(entries, keyField, keyValue, newEntry) {
+    const index = entries.findIndex((entry) => entry[keyField] === keyValue);
+    if (index >= 0) {
+      entries[index] = newEntry;
+    } else {
+      entries.push(newEntry);
+    }
+    return entries;
+  }
 }
 
 module.exports = { FileStorage };

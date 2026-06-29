@@ -10,16 +10,7 @@ class IdentitiesFileStorage extends FileStorage {
 
   async save(key, value, keyName = "id") {
     const data = await this.readFile();
-    const index = data.findIndex((item) => item[keyName] === key);
-
-    if (index >= 0) {
-      // Update existing item
-      data[index] = value;
-    } else {
-      // Add new item
-      data.push(value);
-    }
-
+    this.upsert(data, keyName, key, value);
     await this.writeFile(data);
   }
 
